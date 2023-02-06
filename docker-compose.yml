@@ -1,0 +1,157 @@
+version: "3.9"
+
+networks:
+
+    khyber:
+
+        external: false
+
+        driver: bridge
+
+volumes:
+
+    keycloak:
+
+        external: false
+
+    timescaledb:
+
+        external: false
+
+services:
+
+    keycloak:
+
+        logging:
+
+            driver: local
+
+            options:
+                max-size: "20m"
+                max-file: "5"
+                compress: "true"
+
+        restart: on-failure
+
+        networks:
+            - khyber
+
+        ports:
+            - "8080:8080"
+
+        container_name: keycloak
+
+        volumes:
+            - "keycloak:/tmp"
+
+        image: jboss/keycloak:${KEYCLOAK_VERSION}
+
+        environment:
+            - KEYCLOAK_USER=${KEYCLOAK_USER_NAME}
+            - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+            - DB_VENDOR=postgres
+            - DB_ADDR=timescaledb
+            - DB_PORT=${POSTGRESQL_PORTNUMBER:-5432}
+            - DB_DATABASE=${DATABASE_SERVER_DATABASENAME}
+            - DB_SCHEMA=public
+            - DB_USER=${DATABASE_SERVER_USERNAME}
+            - DB_PASSWORD=${DATABASE_SERVER_PASSWORD}
+
+    keycloak_client:
+
+        logging:
+
+            driver: local
+
+            options:
+                max-size: "20m"
+                max-file: "5"
+                compress: "true"
+
+        restart: on-failure
+
+        networks:
+            - khyber
+
+        ports:
+            - "8000:80"
+
+        container_name: keycloak_client
+
+        build:
+            context: ./js-console
+
+        image: irasus/keycloak_client:latest
+
+    timescaledb:
+
+        logging:
+
+            driver: local
+
+            options:
+                max-size: "20m"
+                max-file: "5"
+                compress: "true"
+
+        restart: unless-stopped
+
+        networks:
+            - khyber
+
+        # ports:
+            # - "${POSTGRESQL_PORTNUMBER:-5432}:5432"
+
+        container_name: timescaledb
+
+        volumes:
+            - "timescaledb:${PGDATA}"
+
+        image: timescale/timescaledb:${TIMESCALEDB_VERSION}
+
+        environment:
+            - POSTGRES_DB=${DATABASE_SERVER_DATABASENAME}
+            - POSTGRES_USER=${DATABASE_SERVER_USERNAME}
+            - POSTGRES_PASSWORD=${DATABASE_SERVER_PASSWORD}
+            - TZ=${TZ}
+            - PGDATA=${PGDATA}
+            - TS_TUNE_MAX_CONNS=200
+            - TIMESCALEDB_TELEMETRY=off
+
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DATABASE_SERVER_USERNAME} -d ${DATABASE_SERVER_DATABASENAME}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    nginx:
+
+        logging:
+
+            driver: local
+
+            options:
+                max-size: "20m"
+                max-file: "5"
+                compress: "true"
+
+        restart: on-failure
+
+        networks:
+            - khyber
+
+        ports:
+            - "${NGINX_HTTP_PORTNUMBER:-80}:80"
+
+        container_name: nginx
+
+        volumes:
+            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+            - "./nginx/services:/etc/nginx/conf.d/"
+
+        image: nginx:${NGINX_VERSION}-alpine
+
+        depends_on:
+            - keycloak
+            - keycloak_client
+
