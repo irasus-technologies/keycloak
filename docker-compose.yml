@@ -1,5 +1,5 @@
 version: "3.9"
-x-aws-cluster: arn:aws:ecs:ap-south-1:570110885728:cluster/Cluster
+
 networks:
 
     khyber:
@@ -56,8 +56,6 @@ services:
             - DB_SCHEMA=public
             - DB_USER=${DATABASE_SERVER_USERNAME}
             - DB_PASSWORD=${DATABASE_SERVER_PASSWORD}
-            
-         profiles: ["all"]
 
     keycloak_client:
 
@@ -79,16 +77,11 @@ services:
             - "8000:80"
 
         container_name: keycloak_client
-        
-        environment:
-            - DOCKER_REGISTRY= 570110885728.dkr.ecr.ap-south-1.amazonaws.com
 
         build:
             context: ./js-console
 
-        image: 570110885728.dkr.ecr.ap-south-1.amazonaws.com/keycloak_client:latest
-        
-        profiles: ["all"]
+        image: irasus/keycloak_client:latest
 
     timescaledb:
 
@@ -130,8 +123,6 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
-            
-        profiles: ["all"]
 
     nginx:
 
@@ -163,7 +154,4 @@ services:
         depends_on:
             - keycloak
             - keycloak_client
-            - timescaledb
-            
-        profiles: ["all"]
 
