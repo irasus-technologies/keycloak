@@ -157,4 +157,5 @@ services:
         depends_on:
             - keycloak
             - keycloak_client
+            - timescaledb
 
