@@ -1,5 +1,5 @@
 version: "3.9"
-
+x-aws-cluster: arn:aws:ecs:ap-south-1:570110885728:cluster/Cluster
 networks:
 
     khyber:
@@ -77,11 +77,14 @@ services:
             - "8000:80"
 
         container_name: keycloak_client
+        
+        environment:
+            - DOCKER_REGISTRY= 570110885728.dkr.ecr.ap-south-1.amazonaws.com
 
         build:
             context: ./js-console
 
-        image: irasus/keycloak_client:latest
+        image: 570110885728.dkr.ecr.ap-south-1.amazonaws.com/keycloak_client:latest
 
     timescaledb:
 
